@@ -1,0 +1,728 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programmation - Place Festi'Fun</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800;900&family=Baloo+Bhaijaan+2:wght@500;600;700;800&family=Plus+Jakarta+Sans:ital,wght@1,600&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #15305B;
+  --navy-soft: #4B6385;
+  --orange: #F59E1B;
+  --orange-soft: #FFCB7A;
+  --teal: #0C7C93;
+  --teal-soft: #A6E3DD;
+  --panel: #FFE5C2;
+  --warm: #FFF9F0;
+  --light-orange: #fff6e9;
+  --bubble: #FFEBCF;
+  --band: 40rem;                 /* width of the dark band on the right */
+  --ease: cubic-bezier(.65, 0, .25, 1);
+  --dur: .9s;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+
+/* 1rem = 1% of the screen height on a 16:9 screen, so everything scales with the screen */
+html { font-size: min(1vh, .5625vw); }
+body {
+  height: 100vh; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1fr) var(--band);
+  background: var(--warm); color: var(--navy);
+  font-family: "Outfit", "Baloo Bhaijaan 2", system-ui, sans-serif; font-size: 2rem;
+}
+
+/* ---------- programmation (full height, left) ---------- */
+.program { position: relative; min-width: 0; height: 100vh; overflow: hidden; }
+.bubble {
+  position: absolute; left: -14rem; top: 50%;
+  width: 74rem; height: 64rem; margin-top: -32rem;
+  border-radius: 50%; background: var(--bubble);
+}
+.screen {
+  position: relative; height: 100%;
+  display: grid; grid-template-columns: minmax(0, 5.4fr) minmax(0, 6.6fr);
+  gap: 4rem; padding: 5rem;
+}
+
+/* left column: the title block stays vertically centered */
+.left { position: relative; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+
+/* header */
+.head { position: relative; min-width: 0; }
+.place {
+  font-family: "Plus Jakarta Sans", "Outfit", system-ui, sans-serif;
+  font-style: italic; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .01em; font-size: 2.4rem; line-height: 1.35; white-space: nowrap;
+  color: var(--navy); margin-bottom: 2rem;
+}
+.place .dot { margin: 0 .5rem; }
+h1 {
+  font-weight: 900; text-transform: uppercase; white-space: nowrap;
+  font-size: 8rem; line-height: 1; letter-spacing: -.01em;
+}
+
+/* date selector: a <select> styled like the old date pill */
+.date {
+  display: inline-block; margin-top: 1.8rem; max-width: 100%;
+  background-color: var(--teal-soft); color: var(--navy);
+  font-family: inherit; font-weight: 700; font-size: 2.9rem; line-height: 1.2;
+  padding: 1rem 7rem 1rem 2.6rem; border: 0; border-radius: 0; cursor: pointer;
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 12'%3E%3Cpath d='M2 2l8 8 8-8' fill='none' stroke='%2315305B' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 2.4rem center; background-size: 2.4rem;
+  text-overflow: ellipsis;
+}
+.date.single { padding-right: 2.6rem; background-image: none; cursor: default; pointer-events: none; }
+.date.bump { animation: pop .8s var(--ease); }
+@keyframes pop { from { opacity: 0; transform: translateY(1.6rem); } to { opacity: 1; transform: none; } }
+
+/* schedule panel */
+.panel {
+  background: transparent; border-radius: 0;
+  padding: 3rem 3.2rem; min-height: 0; display: flex; flex-direction: column;
+}
+/* the list scrolls; its scrollbar only shows while the mouse is over it */
+.viewport {
+  flex: 1; min-height: 0; position: relative; outline: none;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
+  scrollbar-width: thin; scrollbar-color: transparent transparent;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 var(--ft, 0px), #000 calc(100% - var(--fb, 0px)), transparent 100%);
+          mask-image: linear-gradient(to bottom, transparent 0, #000 var(--ft, 0px), #000 calc(100% - var(--fb, 0px)), transparent 100%);
+}
+.viewport:hover { scrollbar-color: rgba(21, 48, 91, .35) transparent; }
+.slider.enter { animation: slideIn 1s var(--ease); }
+@keyframes slideIn { from { opacity: 0; transform: translateX(16rem); } to { opacity: 1; transform: none; } }
+
+.list { position: relative; }
+.list.instant, .list.instant .spot { transition: none !important; }
+
+/* the highlight that slides from one event to the next */
+.spot {
+  position: absolute; left: 0; right: 0; top: 0; height: 0; z-index: 0;
+  border-radius: 0; background: var(--teal-soft); opacity: 0;
+  transition: transform var(--dur) var(--ease), height var(--dur) var(--ease), opacity .5s ease;
+}
+ol { list-style: none; position: relative; z-index: 1; }
+
+.row {
+  position: relative; display: grid;
+  grid-template-columns: 13rem minmax(0, 1fr) 5rem;
+  align-items: center; column-gap: 2.2rem;
+  padding: 1.5rem 2.2rem; margin-bottom: 1rem;
+  transition: opacity .6s ease;
+}
+.row:last-child { margin-bottom: 0; }
+.row::after {
+  content: ""; position: absolute; left: 2.2rem; right: 2.2rem; bottom: -.6rem;
+  height: .2rem; background: rgba(21, 48, 91, .18);
+}
+.row:last-child::after { display: none; }
+.row.past { opacity: .38; }
+
+.time {
+  font-weight: 900; font-size: 3.4rem; text-align: center; padding: .9rem 0;
+  border-radius: 99rem; background: var(--orange-soft);
+  font-variant-numeric: tabular-nums; transition: background .5s ease;
+}
+.row.p1 .time { background: var(--teal-soft); }
+.row.now .time { background: #fff; }
+
+.fr { font-weight: 800; font-size: 3rem; line-height: 1.1; white-space: nowrap; }
+.alt {
+  margin-top: .6rem; font-size: 2.4rem; font-weight: 500; line-height: 1.25;
+  color: var(--navy-soft); transition: color .5s ease;
+}
+.row.now .alt { color: var(--navy); }
+.alt .sep { margin: 0 1rem; opacity: .7; }
+.alt [lang="ar"] { font-family: "Baloo Bhaijaan 2", "Outfit", sans-serif; font-weight: 600; font-size: 1.1em; line-height: 1; unicode-bidi: isolate; }
+
+/* the pulsing LIVE pill */
+.live {
+  justify-self: end; display: flex; align-items: center; gap: 1rem;
+  font-weight: 900; font-size: 2.4rem; letter-spacing: .14em;
+  color: var(--navy); background: var(--orange);
+  padding: .9rem 2rem .9rem 1.6rem; border-radius: 99rem;
+  opacity: 0; transform: translateX(3rem) scale(.85);
+  transition: opacity .5s ease, transform .8s var(--ease);
+}
+.live::before {
+  content: ""; width: 1.3rem; height: 1.3rem; border-radius: 50%; background: var(--navy);
+  animation: blink 1.5s ease-in-out infinite;
+}
+.row.now .live {
+  opacity: 1; transform: none; transition-delay: .35s;
+  animation: pulse 1.5s ease-out 1.1s infinite;
+}
+@keyframes pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(245, 158, 27, .7); scale: 1; }
+  70%  { box-shadow: 0 0 0 2rem rgba(245, 158, 27, 0); scale: 1.06; }
+  100% { box-shadow: 0 0 0 0 rgba(245, 158, 27, 0); scale: 1; }
+}
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+.empty {
+  flex: 1; display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: 3.4rem; font-weight: 700; color: var(--navy-soft);
+}
+
+/* ---------- right band: queue numbers + clock ---------- */
+.band {
+  height: 100vh; min-height: 0; min-width: 0;
+  display: flex; flex-direction: column; gap: 2rem;
+  background: var(--light-orange); color: var(--navy); padding: 2.4rem;
+}
+.queues {
+  flex: 1; min-height: 0; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 2rem;
+  font-size: calc(var(--qs, 1) * 1rem);          /* the script lowers --qs if the cards don't fit the band */
+}
+.qcard {
+  flex: none; min-width: 0; background: #fff; color: var(--navy);
+  box-shadow: 0 .4rem 0 rgba(21, 48, 91, .1);
+  display: flex; align-items: center; justify-content: space-between; gap: .8em;
+  padding: 1.5em 1.9em; border-radius: 2.8em;
+}
+.q-henna  { background: var(--orange-soft); }   /* same warm orange as the event times */
+.q-makeup { background: var(--teal-soft); }     /* same teal as the event highlight */
+.qt { text-align: left; white-space: nowrap; }
+.qt .qn { font-weight: 900; font-size: 3.2em; line-height: 1.1; }
+.qt .qc { margin-top: .15em; font-weight: 700; font-size: 2.5em; line-height: 1.1; color: var(--navy-soft); }
+.nb { display: flex; align-items: baseline; justify-content: flex-end; gap: .3em; text-align: right; }
+.nb small { font-weight: 700; font-size: 2.5em; color: var(--navy-soft); }
+.num { font-weight: 900; font-size: 7.4em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.num.empty { opacity: .3; }
+.num.change { animation: tick .8s var(--ease); }
+@keyframes tick { from { opacity: 0; transform: translateY(-.5em) scale(.9); } to { opacity: 1; transform: none; } }
+
+.clock { margin-top: auto; flex: none; text-align: center; padding-top: 2rem; }
+.ct { font-family: "Montserrat", "Outfit", sans-serif; font-weight: 500; letter-spacing: .04em; font-size: 5.6rem; line-height: 1.1; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.cd { margin-top: .4rem; font-family: "Montserrat", "Outfit", sans-serif; font-weight: 500; font-size: 2.4rem; color: var(--navy-soft); font-variant-numeric: tabular-nums; }
+
+#statuses {
+  position: fixed; right: 2rem; bottom: 1.6rem; z-index: 5;
+  display: flex; flex-direction: column; align-items: flex-end; gap: .6rem;
+}
+#statuses > div {
+  font-size: 1.8rem; color: var(--navy-soft);
+  background: rgba(255, 255, 255, .9); padding: .7rem 1.6rem; border-radius: 2rem;
+}
+#statuses > div:empty { display: none; }
+
+/* portrait / square screens: the band moves to the footer (always visible, the list scrolls above it),
+   full width, boxes side by side, no clock */
+@media (max-aspect-ratio: 5/4) {
+  html { font-size: .85vw; }
+  body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; }
+  .program { height: auto; min-height: 0; }
+  .screen { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); gap: 5rem; padding: 6rem 5rem; }
+  .bubble { display: none; }
+  .left { justify-content: flex-start; }
+  .band { height: auto; flex-direction: row; padding: 2rem 2.4rem; gap: 0; }
+  .clock { display: none; }
+  .queues {
+    flex: 1; max-height: 38vh; overflow: hidden;
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: max-content;
+    justify-content: start; justify-items: stretch; align-content: start; gap: 1.8rem;
+  }
+  .qcard { flex: none; }
+}
+</style>
+</head>
+<body>
+<div class="program">
+  <div class="bubble"></div>
+  <main class="screen">
+    <div class="left">
+      <header class="head" id="head">
+        <p class="place">Place Festi’Fun <span class="dot">·</span> Zone Animation</p>
+        <h1 id="title">Programmation</h1>
+        <select class="date" id="date" aria-label="Date" hidden></select>
+      </header>
+    </div>
+
+    <section class="panel">
+      <div class="empty" id="empty" hidden>Aucune activité programmée pour le moment.</div>
+      <div class="viewport" id="viewport" tabindex="0">
+        <div class="slider" id="slider">
+          <div class="list" id="list">
+            <div class="spot" id="spot"></div>
+            <ol id="rows"></ol>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<aside class="band">
+  <div class="queues" id="queues" hidden></div>
+  <div class="clock">
+    <div class="ct" id="ct"></div>
+    <div class="cd" id="cd"></div>
+  </div>
+</aside>
+
+<div id="statuses"><div id="status"></div><div id="status-q"></div></div>
+
+<script>
+/* ========== SETTINGS (edit these) ========== */
+const CONFIG = {
+  // Option A (recommended): the sheet's ID and the name of the tab at the bottom of the sheet.
+  // Sheet ID = the long text between /d/ and /edit in the sheet's normal address.
+  // The sheet must be shared as: General access = "Anyone with the link", role = Viewer.
+  SHEET_ID: "1yiZ2-klblAgGte_FhSdcIVhMmnyaECfMBsdcfVTJ_UM",
+  SHEET_TAB: "sample-schedule",
+
+  // Option B: a "Publish to web" CSV link (browsers can block this one).
+  SHEET_CSV_URL: "",
+
+  // Leave both empty to use the built-in demo data.
+
+  REFRESH_SECONDS: 30,         // how often the schedule is re-read
+  DEFAULT_DURATION_MIN: 30,    // length of an activity when its "end" cell is empty
+  SHOW_ENDED: true,            // keep finished activities in the list (greyed out)
+  SCROLL_HOLD_SECONDS: 20,     // after someone scrolls the list, wait this long before following the live event again
+  DAY_RESET_SECONDS: 120,      // after someone picks another day, go back to the current day after this long
+
+  // Henna / makeup queue numbers. They are read from the tab "Display" of the same sheet
+  // (the queue script keeps that tab up to date). Needs SHEET_ID above.
+  SHOW_QUEUES: true,           // false = never show the queue numbers
+  QUEUE_TAB: "Display",
+  QUEUE_REFRESH_SECONDS: 5     // how often the queue numbers are re-read
+};
+
+/* Sheet columns (first row = headers, exact names, in English):
+   date | start | end | activity_fr | activity_en | activity_ar | host
+   date = YYYY-MM-DD     start/end = HH:MM (24h)     host is not shown on screen.
+   Test tips: add ?time=10:50 (and optionally &date=2026-11-15) to the page address
+   to pretend it is that moment (the schedule only; the clock in the band always shows the real time). */
+
+const TEXT = {
+  demo:  "Données de démonstration (aucune feuille liée)",
+  error: "Mise à jour impossible, dernier programme affiché",
+  qerror: "Files d’attente : mise à jour impossible"
+};
+
+/* Names shown in the queue cards (French only, not translated). */
+const QUEUE_NAMES = { henna: "Henné", makeup: "Maquillage" };
+const QUEUE_ORDER = ["henna", "makeup"];
+
+/* ========== helpers ========== */
+const $ = id => document.getElementById(id);
+const pad = n => String(n).padStart(2, "0");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const toMin = s => { const [h, m] = String(s).trim().split(":").map(Number); return h * 60 + (m || 0); };
+const normDate = s => { const m = String(s || "").trim().match(/^(\d{4})-(\d{1,2})-(\d{1,2})/); return m ? m[1] + "-" + pad(m[2]) + "-" + pad(m[3]) : ""; };
+const normTime = s => { const m = String(s || "").trim().match(/^(\d{1,2})[:hH](\d{2})/); return m ? pad(m[1]) + ":" + m[2] : ""; };
+const dayMinutes = date => { const [y, m, d] = date.split("-").map(Number); return Date.UTC(y, m - 1, d) / 60000; };
+
+function todayStr() {
+  const o = normDate(new URLSearchParams(location.search).get("date"));
+  if (o) return o;
+  const n = new Date();
+  return n.getFullYear() + "-" + pad(n.getMonth() + 1) + "-" + pad(n.getDate());
+}
+function nowStamp() {
+  const t = normTime(new URLSearchParams(location.search).get("time"));
+  const n = new Date();
+  return dayMinutes(todayStr()) + (t ? toMin(t) : n.getHours() * 60 + n.getMinutes());
+}
+function frDate(date) {
+  const [y, m, d] = date.split("-").map(Number);
+  const s = new Date(y, m - 1, d).toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function parseCSV(text) {
+  const rows = []; let row = [], cell = "", q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') q = false;
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(cell); cell = "";
+      if (row.some(x => x.trim() !== "")) rows.push(row);
+      row = [];
+    } else cell += c;
+  }
+  row.push(cell);
+  if (row.some(x => x.trim() !== "")) rows.push(row);
+  const head = (rows.shift() || []).map(h => h.trim().toLowerCase());
+  return rows.map(r => Object.fromEntries(head.map((h, i) => [h, (r[i] || "").trim()])));
+}
+
+function demoData() {
+  const d0 = todayStr(), [y, m, dd] = d0.split("-").map(Number), t = new Date(y, m - 1, dd + 1);
+  const days = [d0, t.getFullYear() + "-" + pad(t.getMonth() + 1) + "-" + pad(t.getDate())];
+  const acts = [
+    { en: "Opening show", fr: "Spectacle d'ouverture", ar: "عرض الافتتاح" },
+    { en: "Magic act", fr: "Spectacle de magie", ar: "عرض سحري" },
+    { en: "Face painting", fr: "Maquillage pour enfants", ar: "الرسم على الوجه" },
+    { en: "Dance workshop", fr: "Atelier de danse", ar: "ورشة الرقص" },
+    { en: "Puppet theatre", fr: "Théâtre de marionnettes", ar: "مسرح العرائس" },
+    { en: "Balloon sculptures", fr: "Sculptures de ballons", ar: "تشكيلات البالونات" },
+    { en: "Music & games", fr: "Musique et jeux", ar: "موسيقى وألعاب" },
+    { en: "Storytelling", fr: "Contes", ar: "حكايات" },
+    { en: "Talent show", fr: "Spectacle de talents", ar: "عرض المواهب" },
+    { en: "Closing parade", fr: "Défilé de clôture", ar: "عرض الختام" }
+  ];
+  const out = [];
+  days.forEach(date => acts.forEach((a, i) => {
+    const s = 9 * 60 + i * 45, e = s + 40;
+    out.push({ date, start: pad(Math.floor(s / 60)) + ":" + pad(s % 60), end: pad(Math.floor(e / 60)) + ":" + pad(e % 60),
+               activity_en: a.en, activity_fr: a.fr, activity_ar: a.ar });
+  }));
+  return out;
+}
+
+/* ========== data loading ========== */
+let schedule = [];
+
+/* Converts one Google Sheets cell into plain text (handles real dates and times too). */
+function cellText(c) {
+  if (!c || c.v === null || c.v === undefined) return "";
+  const v = c.v;
+  if (Array.isArray(v)) return pad(v[0]) + ":" + pad(v[1] || 0);                  // time of day
+  if (typeof v === "string") {
+    const m = v.match(/^Date\(([\d,\s]+)\)$/);
+    if (m) {
+      const n = m[1].split(",").map(Number);                                        // [year, month0, day, h, min, s]
+      if (n[0] === 1899) return pad(n[3] || 0) + ":" + pad(n[4] || 0);             // time stored as a date
+      return n[0] + "-" + pad(n[1] + 1) + "-" + pad(n[2]);                          // real date
+    }
+    return v.trim();
+  }
+  return String(v).trim();
+}
+
+/* Loads the sheet through a <script> tag, which the browser does not block (no CORS). */
+let gvizCount = 0;
+function loadGviz(tab) {
+  return new Promise((resolve, reject) => {
+    const cb = "gviz_" + (++gvizCount) + "_" + Date.now();
+    const s = document.createElement("script");
+    let timer;
+    const done = (err, data) => {
+      clearTimeout(timer); delete window[cb]; s.remove();
+      err ? reject(err) : resolve(data);
+    };
+    timer = setTimeout(() => done(new Error("No answer from Google. Check the Sheet ID, the tab name, and that the sheet is shared as 'Anyone with the link: Viewer'.")), 15000);
+    window[cb] = resp => {
+      if (!resp || resp.status === "error") {
+        const e = resp && resp.errors && resp.errors[0];
+        return done(new Error("Google says: " + ((e && (e.detailed_message || e.message)) || "unknown error")));
+      }
+      const cols = resp.table.cols.map(c => (c.label || "").trim().toLowerCase());
+      done(null, resp.table.rows.map(r => Object.fromEntries(cols.map((h, i) => [h, cellText(r.c[i])]))));
+    };
+    s.onerror = () => done(new Error("Could not load the sheet. Check the Sheet ID and the sharing setting."));
+    s.src = "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(CONFIG.SHEET_ID) +
+            "/gviz/tq?headers=1&tqx=responseHandler:" + cb +
+            "&sheet=" + encodeURIComponent(tab) + "&_=" + Date.now();
+    document.head.appendChild(s);
+  });
+}
+
+async function load() {
+  try {
+    if (CONFIG.SHEET_ID) { schedule = await loadGviz(CONFIG.SHEET_TAB); setStatus(null); }
+    else if (!CONFIG.SHEET_CSV_URL) { schedule = demoData(); setStatus("demo"); }
+    else {
+      if (!/csv/i.test(CONFIG.SHEET_CSV_URL)) throw new Error('The link is not a CSV link. In "Publish to web", choose "Comma-separated values (.csv)".');
+      const res = await fetch(CONFIG.SHEET_CSV_URL);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      schedule = parseCSV(await res.text());
+      setStatus(null);
+    }
+  } catch (err) {
+    console.error(err);
+    setStatus("error", String((err && err.message) || err));
+  }
+  render();
+}
+
+function setStatus(key, detail) {
+  $("status").innerHTML = key
+    ? esc(TEXT[key]) + (detail ? "<br><small>Technical detail: " + esc(detail) + "</small>" : "")
+    : "";
+}
+
+/* ========== clock ========== */
+function tickClock() {
+  const n = new Date();
+  $("ct").textContent = pad(n.getHours()) + ":" + pad(n.getMinutes()) + ":" + pad(n.getSeconds());
+  $("cd").textContent = pad(n.getDate()) + "/" + pad(n.getMonth() + 1) + "/" + n.getFullYear();
+}
+
+/* ========== queue numbers ========== */
+function demoQueues() {
+  return [
+    { queue: "henna",  chair: "1", serving: "12" }, { queue: "henna",  chair: "2", serving: "9" }, { queue: "henna", chair: "3", serving: "14" },
+    { queue: "makeup", chair: "1", serving: "7" },  { queue: "makeup", chair: "2", serving: "5" }
+  ];
+}
+
+/* rows from the "Display" tab -> [{ id, label, chairs: [{ chair, serving }] }] */
+function groupQueues(rows) {
+  const map = {};
+  rows.forEach(r => {
+    const q = String(r.queue || "").trim().toLowerCase(), c = String(r.chair || "").trim();
+    if (!q || !c) return;
+    (map[q] = map[q] || { label: String(r.label || "").trim(), chairs: [] }).chairs.push({ chair: c, serving: String(r.serving || "").trim() });
+  });
+  const rank = id => { const i = QUEUE_ORDER.indexOf(id); return i < 0 ? 99 : i; };
+  return Object.keys(map).sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)).map(id => ({
+    id, label: map[id].label, chairs: map[id].chairs.sort((a, b) => Number(a.chair) - Number(b.chair))
+  }));
+}
+
+const qview = { sig: "", nums: [], cards: [] };
+
+/* One card per chair, stacked in the band: "Henné · Chaise 1" on top, the number below. */
+function renderQueues(groups) {
+  const box = $("queues");
+  if (!CONFIG.SHOW_QUEUES || !groups.length) { box.hidden = true; box.innerHTML = ""; qview.sig = ""; qview.nums = []; qview.cards = []; return; }
+  const sig = groups.map(g => g.id + ":" + g.chairs.map(c => c.chair).join(",")).join("|");
+  if (sig !== qview.sig) {
+    box.innerHTML = groups.map(g => {
+      const name = QUEUE_NAMES[g.id] || g.label || g.id;
+      return g.chairs.map(c =>
+        '<section class="qcard q-' + esc(g.id.replace(/[^a-z0-9_-]/g, "")) + '">' +
+        '<div class="qt"><div class="qn">' + esc(name) + '</div><div class="qc">Chaise ' + esc(c.chair) + "</div></div>" +
+        '<div class="nb"><small>N°</small><b class="num"></b></div></section>').join("");
+    }).join("");
+    qview.sig = sig;
+    qview.nums = Array.from(box.querySelectorAll(".num"));
+    qview.cards = Array.from(box.querySelectorAll(".qcard"));
+  }
+  box.hidden = false;
+  let i = 0;
+  groups.forEach(g => g.chairs.forEach(c => {
+    const el = qview.nums[i], v = c.serving || "—";
+    i++;
+    if (el.dataset.v !== v) {
+      const had = el.dataset.v !== undefined;
+      el.dataset.v = v; el.textContent = v; el.classList.toggle("empty", !c.serving);
+      if (had) retrigger(el, "change");
+    }
+  }));
+  fitQueues();
+}
+
+/* If the cards are too tall (or too wide) for the band, make them smaller (down to 40%). */
+function fitQueues() {
+  const box = $("queues");
+  if (box.hidden) return;
+  const cards = Array.from(box.querySelectorAll(".qcard"));
+  const tooBig = () => box.scrollHeight > box.clientHeight + 1 || box.scrollWidth > box.clientWidth + 1 || cards.some(c => c.scrollWidth > c.clientWidth + 1);
+  let qs = 1;
+  box.style.setProperty("--qs", qs);
+  while (qs > 0.4 && tooBig()) { qs = Math.round((qs - 0.05) * 100) / 100; box.style.setProperty("--qs", qs); }
+}
+
+async function loadQueues() {
+  if (!CONFIG.SHOW_QUEUES) return;
+  try {
+    let rows;
+    if (CONFIG.SHEET_ID) rows = await loadGviz(CONFIG.QUEUE_TAB);
+    else if (!CONFIG.SHEET_CSV_URL) rows = demoQueues();   // demo numbers only when no sheet is linked at all
+    else rows = [];
+    const groups = groupQueues(rows);
+    renderQueues(groups);
+    if (CONFIG.SHEET_ID && rows.length && !groups.length) setQStatus('The tab "' + CONFIG.QUEUE_TAB + '" has no queue rows. Does it exist? Did you run setup() in the queue script?');
+    else setQStatus(null);
+  } catch (err) {
+    console.error(err);
+    setQStatus(String((err && err.message) || err));
+  }
+}
+
+function setQStatus(detail) {
+  $("status-q").innerHTML = detail ? esc(TEXT.qerror) + "<br><small>Technical detail: " + esc(detail) + "</small>" : "";
+}
+
+/* ========== rendering ========== */
+const view = { date: null, sig: "", rows: [], ready: false, autoDay: null, isAuto: true, manualDay: null, manualUntil: 0, holdUntil: 0, daysSig: "" };
+
+function buildRows(items) {
+  $("rows").innerHTML = items.map((ev, i) => {
+    const primary = ev.activity_fr || ev.activity_en || ev.activity_ar || "";
+    const alts = [["en", ev.activity_en], ["ar", ev.activity_ar]].filter(([, v]) => v && v !== primary);
+    const altHtml = alts.map(([l, v]) => '<span lang="' + l + '"' + (l === "ar" ? ' dir="rtl"' : "") + ">" + esc(v) + "</span>")
+                        .join('<span class="sep">·</span>');
+    return '<li class="row p' + (i % 2) + '">' +
+      '<span class="time">' + esc(ev.start) + "</span>" +
+      '<div class="names"><div class="fr" lang="fr">' + esc(primary) + "</div>" +
+      (altHtml ? '<div class="alt" dir="ltr">' + altHtml + "</div>" : "") + "</div>" +
+      '<span class="live" aria-hidden="true">LIVE</span></li>';
+  }).join("");
+  view.rows = Array.from($("rows").children);
+}
+
+function retrigger(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+/* The date <select> under the title: one option per date found in the sheet (no arrow / not clickable with a single date). */
+function renderDateSelect(days, selected) {
+  const sel = $("date");
+  const sig = days.join("|");
+  if (sig !== view.daysSig) {
+    sel.innerHTML = days.map(d => '<option value="' + esc(d) + '">' + esc(frDate(d)) + "</option>").join("");
+    view.daysSig = sig;
+  }
+  if (sel.value !== selected) sel.value = selected;
+  const single = days.length < 2;
+  sel.classList.toggle("single", single);
+  sel.tabIndex = single ? -1 : 0;
+  sel.hidden = false;
+}
+
+function render() {
+  const now = nowStamp();
+  const events = schedule.map(r => {
+    const date = normDate(r.date), start = normTime(r.start);
+    if (!date || !start) return null;
+    const end = normTime(r.end);
+    const s = dayMinutes(date) + toMin(start);
+    let e = end ? dayMinutes(date) + toMin(end) : 0;
+    if (e <= s) e = s + CONFIG.DEFAULT_DURATION_MIN;
+    return { ...r, date, start, s, e };
+  }).filter(Boolean).sort((a, b) => a.s - b.s);
+
+  const empty = !events.length;
+  $("empty").hidden = !empty;
+  $("viewport").hidden = empty;
+  if (empty) { $("date").hidden = true; view.sig = ""; view.date = null; view.daysSig = ""; return; }
+
+  // Automatic day = the day of the first event that is not over yet (not the computer's date).
+  // A day picked by hand wins until DAY_RESET_SECONDS without any interaction.
+  const days = events.map(ev => ev.date).filter((d, i, a) => a.indexOf(d) === i);
+  const autoDay = (events.find(ev => ev.e > now) || events[events.length - 1]).date;
+  if (view.manualDay && (!days.includes(view.manualDay) || view.manualDay === autoDay || Date.now() > view.manualUntil)) view.manualDay = null;
+  const date = view.manualDay || autoDay;
+  view.autoDay = autoDay; view.isAuto = date === autoDay;
+
+  let items = events.filter(ev => ev.date === date);
+  if (!CONFIG.SHOW_ENDED && view.isAuto) { const left = items.filter(ev => ev.e > now); if (left.length) items = left; }
+
+  renderDateSelect(days, date);
+  const dateChanged = date !== view.date;
+  if (dateChanged && view.ready) retrigger($("date"), "bump");
+
+  const sig = items.map(ev => [ev.start, ev.activity_fr, ev.activity_en, ev.activity_ar].join("¦")).join("¤");
+  let rebuilt = false;
+  if (sig !== view.sig || dateChanged) { buildRows(items); view.sig = sig; rebuilt = true; }
+
+  const cur = items.findIndex(ev => now >= ev.s && now < ev.e);
+  view.rows.forEach((li, i) => {
+    li.classList.toggle("now", i === cur);
+    li.classList.toggle("past", view.isAuto && i !== cur && items[i].e <= now);
+  });
+
+  if (dateChanged) view.holdUntil = 0;           // a new day always starts at its own position
+  layout(view.ready && !rebuilt);
+  if (dateChanged && view.ready) retrigger($("slider"), "enter");
+  view.date = date;
+  view.ready = true;
+}
+
+/* Moves the highlight, and scrolls the list to the live (or next) event unless someone is scrolling by hand. */
+function layout(animate) {
+  const rows = view.rows;
+  if (!rows.length) return;
+  const list = $("list"), spot = $("spot"), vp = $("viewport");
+  if (!animate) list.classList.add("instant");
+
+  const cur = rows.find(li => li.classList.contains("now"));
+  if (cur) {
+    spot.style.height = cur.offsetHeight + "px";
+    spot.style.transform = "translateY(" + cur.offsetTop + "px)";
+    spot.style.opacity = "1";
+  } else {
+    spot.style.opacity = "0";
+  }
+
+  if (Date.now() >= view.holdUntil) {
+    const maxScroll = Math.max(0, vp.scrollHeight - vp.clientHeight);
+    let want = 0;
+    if (view.isAuto) {
+      const focus = cur || rows.find(li => !li.classList.contains("past")) || rows[rows.length - 1];
+      want = Math.min(maxScroll, Math.max(0, focus.offsetTop - focus.offsetHeight * 1.1));
+    }
+    if (Math.abs(vp.scrollTop - want) > 2) vp.scrollTo({ top: want, behavior: animate ? "smooth" : "auto" });
+  }
+  fades();
+
+  if (!animate) { void list.offsetHeight; list.classList.remove("instant"); }
+}
+
+/* Soft fade at the top/bottom edge only when there is more to scroll in that direction. */
+function fades() {
+  const vp = $("viewport"), max = vp.scrollHeight - vp.clientHeight;
+  vp.style.setProperty("--ft", vp.scrollTop > 2 ? "4rem" : "0px");
+  vp.style.setProperty("--fb", vp.scrollTop < max - 2 ? "4rem" : "0px");
+}
+
+/* Any scroll / touch / key press on the list pauses the automatic following for a while. */
+function userActive() {
+  view.holdUntil = Date.now() + CONFIG.SCROLL_HOLD_SECONDS * 1000;
+  if (view.manualDay) view.manualUntil = Date.now() + CONFIG.DAY_RESET_SECONDS * 1000;
+}
+["wheel", "touchstart", "pointerdown", "keydown"].forEach(ev => $("viewport").addEventListener(ev, userActive, { passive: true }));
+$("viewport").addEventListener("scroll", () => requestAnimationFrame(fades), { passive: true });
+
+/* Picking a date in the select shows that day until DAY_RESET_SECONDS without interaction. */
+$("date").addEventListener("change", e => {
+  const d = e.target.value;
+  view.manualDay = d === view.autoDay ? null : d;
+  view.manualUntil = Date.now() + CONFIG.DAY_RESET_SECONDS * 1000;
+  e.target.blur();
+  render();
+});
+
+/* Shrinks a header line if it is wider than its column (depends on the font that loaded). */
+function fitText(el) {
+  el.style.fontSize = "";
+  let size = parseFloat(getComputedStyle(el).fontSize);
+  while (el.scrollWidth > el.clientWidth && size > 14) { size -= 1; el.style.fontSize = size + "px"; }
+}
+function fitTitle() { fitText($("title")); fitText(document.querySelector(".place")); }
+
+/* French activity names stay on one line: if the longest one is wider than its column, all names get the same smaller size. */
+// function fitNames() {
+//   const els = Array.from(document.querySelectorAll(".fr"));
+//   if (!els.length) return;
+//   els.forEach(el => { el.style.fontSize = ""; });
+//   const base = parseFloat(getComputedStyle(els[0]).fontSize);
+//   let size = base;
+//   els.forEach(el => {
+//     let s = base;
+//     el.style.fontSize = s + "px";
+//     while (el.scrollWidth > el.clientWidth && s > 14) { s -= 1; el.style.fontSize = s + "px"; }
+//     size = Math.min(size, s);
+//   });
+//   els.forEach(el => { el.style.fontSize = size < base ? size + "px" : ""; });
+// }
+function relayout() { fitTitle();  fitQueues(); layout(false); }
+
+tickClock();
+load();
+loadQueues();
+setInterval(tickClock, 1000);
+setInterval(load, CONFIG.REFRESH_SECONDS * 1000);
+setInterval(loadQueues, CONFIG.QUEUE_REFRESH_SECONDS * 1000);
+setInterval(render, 5000);                 // re-check "now" without re-downloading
+window.addEventListener("resize", relayout);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
+fitTitle();
+</script>
+</body>
+</html>
